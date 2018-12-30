@@ -1114,6 +1114,9 @@ BOOL _fileIsSymbolicLink(const unz_file_info *fileInfo)
 
 #pragma mark Private tools for security
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+	
 @implementation NSString (SSZipArchive)
 
 // One implementation alternative would be to use the algorithm found at mz_path_resolve from https://github.com/nmoinvaz/minizip/blob/dev/mz_os.c,
@@ -1178,3 +1181,4 @@ BOOL _fileIsSymbolicLink(const unz_file_info *fileInfo)
 }
 
 @end
+#pragma clang diagnostic pop
