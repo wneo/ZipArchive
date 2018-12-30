@@ -46,10 +46,12 @@ BOOL _fileIsSymbolicLink(const unz_file_info *fileInfo);
 }
 
 #pragma mark - Password check
-
 + (BOOL)isFilePasswordProtectedAtPath:(NSString *)path {
+	return [self isFilePasswordProtectedAtPath:path fileFunc64:NULL];
+}
++ (BOOL)isFilePasswordProtectedAtPath:(NSString *)path fileFunc64:(zlib_filefunc64_def *)pzlib_filefunc_def {
     // Begin opening
-    zipFile zip = unzOpen(path.fileSystemRepresentation);
+    zipFile zip = unzOpen2_64(path.fileSystemRepresentation, pzlib_filefunc_def);
     if (zip == NULL) {
         return NO;
     }
@@ -82,13 +84,18 @@ BOOL _fileIsSymbolicLink(const unz_file_info *fileInfo);
     
     return NO;
 }
-
 + (BOOL)isPasswordValidForArchiveAtPath:(NSString *)path password:(NSString *)pw error:(NSError **)error {
+	return [self isPasswordValidForArchiveAtPath:path fileFunc64:NULL password:pw error:error];
+}
++ (BOOL)isPasswordValidForArchiveAtPath:(NSString *)path
+							 fileFunc64:(zlib_filefunc64_def *)pzlib_filefunc_def
+							   password:(NSString *)pw
+								  error:(NSError **)error {
     if (error) {
         *error = nil;
     }
 
-    zipFile zip = unzOpen(path.fileSystemRepresentation);
+    zipFile zip = unzOpen2_64(path.fileSystemRepresentation, pzlib_filefunc_def);
     if (zip == NULL) {
         if (error) {
             *error = [NSError errorWithDomain:SSZipArchiveErrorDomain
@@ -222,6 +229,21 @@ BOOL _fileIsSymbolicLink(const unz_file_info *fileInfo);
 }
 
 + (BOOL)unzipFileAtPath:(NSString *)path
+		  toDestination:(NSString *)destination
+	 preserveAttributes:(BOOL)preserveAttributes
+			  overwrite:(BOOL)overwrite
+		 nestedZipLevel:(NSInteger)nestedZipLevel
+			   password:(nullable NSString *)password
+				  error:(NSError **)error
+			   delegate:(nullable id<SSZipArchiveDelegate>)delegate
+		progressHandler:(void (^_Nullable)(NSString *entry, unz_file_info zipInfo, long entryNumber, long total))progressHandler
+	  completionHandler:(void (^_Nullable)(NSString *path, BOOL succeeded, NSError * _Nullable error))completionHandler {
+	
+	return [self unzipFileAtPath:path fileFunc64:NULL toDestination:destination preserveAttributes:preserveAttributes overwrite:overwrite nestedZipLevel:nestedZipLevel password:password error:error delegate:delegate progressHandler:progressHandler completionHandler:completionHandler];
+}
+
++ (BOOL)unzipFileAtPath:(NSString *)path
+			 fileFunc64:(zlib_filefunc64_def *)pzlib_filefunc_def
           toDestination:(NSString *)destination
      preserveAttributes:(BOOL)preserveAttributes
               overwrite:(BOOL)overwrite
@@ -249,7 +271,7 @@ BOOL _fileIsSymbolicLink(const unz_file_info *fileInfo);
     }
     
     // Begin opening
-    zipFile zip = unzOpen(path.fileSystemRepresentation);
+    zipFile zip =  unzOpen2_64(path.fileSystemRepresentation, pzlib_filefunc_def);
     if (zip == NULL)
     {
         NSDictionary *userInfo = @{NSLocalizedDescriptionKey: @"failed to open zip file"};

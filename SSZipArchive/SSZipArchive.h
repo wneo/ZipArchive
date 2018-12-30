@@ -11,6 +11,7 @@
 
 #import <Foundation/Foundation.h>
 #include "SSZipCommon.h"
+#import "minizip/unzip.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -30,8 +31,13 @@ typedef NS_ENUM(NSInteger, SSZipArchiveErrorCode) {
 
 // Password check
 + (BOOL)isFilePasswordProtectedAtPath:(NSString *)path;
-+ (BOOL)isPasswordValidForArchiveAtPath:(NSString *)path password:(NSString *)pw error:(NSError * _Nullable * _Nullable)error NS_SWIFT_NOTHROW;
++ (BOOL)isFilePasswordProtectedAtPath:(NSString *)path fileFunc64:(nullable zlib_filefunc64_def *)pzlib_filefunc_def;
 
++ (BOOL)isPasswordValidForArchiveAtPath:(NSString *)path password:(NSString *)pw error:(NSError * _Nullable * _Nullable)error NS_SWIFT_NOTHROW;
++ (BOOL)isPasswordValidForArchiveAtPath:(NSString *)path
+							 fileFunc64:(nullable zlib_filefunc64_def *)pzlib_filefunc_def
+							   password:(NSString *)pw
+								  error:(NSError **)error;
 // Unzip
 + (BOOL)unzipFileAtPath:(NSString *)path toDestination:(NSString *)destination;
 + (BOOL)unzipFileAtPath:(NSString *)path toDestination:(NSString *)destination delegate:(nullable id<SSZipArchiveDelegate>)delegate;
