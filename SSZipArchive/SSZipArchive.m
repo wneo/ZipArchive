@@ -222,7 +222,7 @@ BOOL _fileIsSymbolicLink(const unz_file_info *fileInfo);
                password:(nullable NSString *)password
                   error:(NSError **)error
                delegate:(nullable id<SSZipArchiveDelegate>)delegate
-        progressHandler:(void (^_Nullable)(NSString *entry, unz_file_info zipInfo, long entryNumber, long total))progressHandler
+		progressHandler:(void (^_Nullable)(NSString *entry, unz_file_info zipInfo, long entryNumber, long total))progressHandler
       completionHandler:(void (^_Nullable)(NSString *path, BOOL succeeded, NSError * _Nullable error))completionHandler
 {
     return [self unzipFileAtPath:path toDestination:destination preserveAttributes:preserveAttributes overwrite:overwrite nestedZipLevel:0 password:password error:error delegate:delegate progressHandler:progressHandler completionHandler:completionHandler];
@@ -239,7 +239,7 @@ BOOL _fileIsSymbolicLink(const unz_file_info *fileInfo);
 		progressHandler:(void (^_Nullable)(NSString *entry, unz_file_info zipInfo, long entryNumber, long total))progressHandler
 	  completionHandler:(void (^_Nullable)(NSString *path, BOOL succeeded, NSError * _Nullable error))completionHandler {
 	
-	return [self unzipFileAtPath:path fileFunc64:NULL toDestination:destination preserveAttributes:preserveAttributes overwrite:overwrite nestedZipLevel:nestedZipLevel password:password error:error delegate:delegate progressHandler:progressHandler completionHandler:completionHandler];
+	return [self unzipFileAtPath:path fileFunc64:NULL toDestination:destination preserveAttributes:preserveAttributes overwrite:overwrite nestedZipLevel:nestedZipLevel password:password error:error delegate:delegate progressHandler:progressHandler bytesProgress:NULL  completionHandler:completionHandler];
 }
 
 + (BOOL)unzipFileAtPath:(NSString *)path
@@ -252,6 +252,7 @@ BOOL _fileIsSymbolicLink(const unz_file_info *fileInfo);
                   error:(NSError **)error
                delegate:(nullable id<SSZipArchiveDelegate>)delegate
         progressHandler:(void (^_Nullable)(NSString *entry, unz_file_info zipInfo, long entryNumber, long total))progressHandler
+		  bytesProgress:(void (^_Nullable)(uint64_t doneFileBytes, uint64_t currentDoneBytes))bytesProgress
       completionHandler:(void (^_Nullable)(NSString *path, BOOL succeeded, NSError * _Nullable error))completionHandler
 {
     // Guard against empty strings
@@ -452,12 +453,19 @@ BOOL _fileIsSymbolicLink(const unz_file_info *fileInfo);
             if (isDirectory && !fileIsSymbolicLink) {
                 // nothing to read/write for a directory
             } else if (!fileIsSymbolicLink) {
+				uint64_t oneUnzipDoneSize = 0;
+				uint64_t uncompressedTotalSize = fileInfo.uncompressed_size;
+				uint64_t compressedTotalSize = fileInfo.compressed_size;
                 // ensure we are not creating stale file entries
                 int readBytes = unzReadCurrentFile(zip, buffer, 4096);
                 if (readBytes >= 0) {
                     FILE *fp = fopen(fullPath.fileSystemRepresentation, "wb");
                     while (fp) {
                         if (readBytes > 0) {
+							oneUnzipDoneSize += readBytes;
+							if (bytesProgress) {
+								bytesProgress(currentPosition - compressedTotalSize, oneUnzipDoneSize * compressedTotalSize / uncompressedTotalSize);
+							}
                             if (0 == fwrite(buffer, readBytes, 1, fp)) {
                                 if (ferror(fp)) {
                                     NSString *message = [NSString stringWithFormat:@"Failed to write file (check your free space)"];
